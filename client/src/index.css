@@ -1,0 +1,64 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@theme {
+  --breakpoint-xsm: 480px;
+  --breakpoint-3xl: 1920px;
+}
+
+:root {
+  font-family: "Inter", system-ui, "Segoe UI", sans-serif;
+  color: #0f172a;
+  background: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+@media (max-width: 900px) {
+  :root {
+    font-size: 15px;
+  }
+}
+
+@media print {
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: white !important; }
+  .print\:hidden { display: none !important; }
+
+  /* Ensure receipt document fills the page without slate bg */
+  .min-h-screen { min-height: unset; background: white !important; }
+
+  /* Remove box shadow on paper */
+  .shadow { box-shadow: none !important; }
+
+  /* Page setup */
+  @page { margin: 10mm; size: A4; }
+}

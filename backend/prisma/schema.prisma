@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ShipmentStatus {
+  ORDER_CONFIRMED
+  PICKED_BY_COURIER
+  ON_THE_WAY
+  CUSTOM_HOLD
+  DELIVERED
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PENDING
+}
+
+enum PaymentDepositStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+model Shipment {
+  id                   String         @id @default(cuid())
+  trackingNumber       String         @unique
+  senderName           String
+  senderEmail          String?
+  senderPhone          String?
+  senderAddress        String
+  receiverName         String
+  receiverEmail        String
+  receiverPhone        String?
+  receiverAddress      String
+  originLocation       String
+  originLat            Float
+  originLng            Float
+  currentLocation      String?
+  currentLat           Float?
+  currentLng           Float?
+  destinationLocation  String
+  destinationLat        Float
+  destinationLng        Float
+  currentStatus        ShipmentStatus @default(ORDER_CONFIRMED)
+  packageType          String?
+  shipmentType         String?
+  weight               String?
+  itemDescription      String?
+  itemImageUrl         String?
+  dateShipped          DateTime?
+  pickupDate           DateTime?
+  expectedDeliveryDate DateTime?
+  shippingCost         Decimal?       @db.Decimal(12, 2)
+  clearanceCost        Decimal?       @db.Decimal(12, 2)
+  totalCost            Decimal?       @db.Decimal(12, 2)
+  paymentStatus        PaymentStatus  @default(UNPAID)
+  deliveryMode         String?
+  comment              String?
+  isOnHold             Boolean        @default(false)
+  holdReleased         Boolean        @default(false)
+  currency             String         @default("USD")
+  deliveryProgress     Int            @default(0)
+  progress             Json?
+  history              Json?
+  paymentHistory       Json?
+  deposits             PaymentDeposit[]
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
+model PaymentDeposit {
+  id              String               @id @default(cuid())
+  shipmentId      String
+  shipment        Shipment             @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  trackingNumber  String
+  recipientName   String
+  recipientEmail  String
+  method          String
+  transactionId   String
+  amount          Decimal              @db.Decimal(12, 2)
+  proofUrl        String
+  proofPublicId   String?
+  status          PaymentDepositStatus @default(PENDING)
+  note            String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([trackingNumber])
+  @@index([status])
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SiteSettings {
+  id                   String   @id @default("singleton")
+  contactPhone         String   @default("")
+  contactEmail         String   @default("")
+  contactAddress       String   @default("")
+  formDestinationEmail String   @default("")
+  socialFacebook       String   @default("")
+  socialX              String   @default("")
+  socialInstagram      String   @default("")
+  socialTiktok         String   @default("")
+  updatedAt            DateTime @updatedAt
+}
+
+model PaymentMethod {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  details   Json     @default("{}")
+  isVisible Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

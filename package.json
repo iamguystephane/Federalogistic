@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix client run dev -- --host 127.0.0.1 --port 3000\"",
+    "start": "concurrently \"npm --prefix backend start\" \"npm --prefix client run preview -- --host 127.0.0.1 --port 3000\"",
+    "build": "npm --prefix client run build",
+    "db:push": "npm --prefix backend run db:push",
+    "push": "git push"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
