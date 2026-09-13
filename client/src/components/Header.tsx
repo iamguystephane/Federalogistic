@@ -149,7 +149,7 @@ export function Header() {
         <div className="mx-auto flex h-17 max-w-300 items-center justify-between px-5">
           {/* Logo */}
           <a href="/" aria-label="Federalogistic home" className="flex items-center select-none">
-            <img src="/atlas-assets/logo-dark.svg" alt="Federalogistic" className="h-45 md:h-45 w-auto object-contain rounded-2xl mb-4" />
+            <img src="/full-logo.png" alt="Federalogistic" className="h-11 w-auto object-contain" />
           </a>
 
           {/* Desktop links */}

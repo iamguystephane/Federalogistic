@@ -161,7 +161,9 @@ export function PrintReceiptPage() {
           {/* ── Company header ─────────────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img src="/atlas-assets/logo-light.svg" alt="Federalogistic" className="h-14 w-auto object-contain" />
+              <div className="inline-flex items-center rounded-xl bg-[#2459d8] px-3 py-2.5">
+                <img src="/full-logo.png" alt="Federalogistic" className="h-7 w-auto object-contain" />
+              </div>
               <div className="border-l border-slate-200 pl-3">
                 <p className="text-[0.78rem] text-slate-500 leading-none">Global Logistics Solutions</p>
               </div>

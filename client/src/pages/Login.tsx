@@ -60,7 +60,9 @@ const LoginPage = () => {
         {/* Brand header */}
         <div className="text-center mb-7">
           <div className="flex justify-center mb-3">
-            <img src="/atlas-assets/logo-light.svg" alt="Federalogistic" className="h-16 w-auto object-contain rounded-2xl" />
+            <div className="inline-flex items-center rounded-2xl bg-[#2459d8] px-4 py-3">
+              <img src="/full-logo.png" alt="Federalogistic" className="h-8 w-auto object-contain" />
+            </div>
           </div>
           <p className="text-xs text-slate-400 mt-0.5 font-medium uppercase tracking-wider">Admin Portal</p>
         </div>

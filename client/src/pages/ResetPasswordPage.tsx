@@ -75,7 +75,7 @@ export function ResetPasswordPage() {
         />
         <div className="relative z-10 flex flex-col h-full p-12">
           <div className="flex items-center">
-            <img src="/atlas-assets/logo-light.svg" alt="Federalogistic" className="h-12 w-auto object-contain brightness-0 invert" />
+            <img src="/full-logo.png" alt="Federalogistic" className="h-10 w-auto object-contain" />
           </div>
 
           <div className="flex-1 flex flex-col justify-center max-w-lg">
@@ -147,7 +147,7 @@ export function ResetPasswordPage() {
             <>
               <div className="mb-8">
                 <div className="flex items-center mb-8 lg:hidden">
-                  <img src="/atlas-assets/logo-light.svg" alt="Federalogistic" className="h-10 w-auto object-contain brightness-0 invert" />
+                  <img src="/full-logo.png" alt="Federalogistic" className="h-9 w-auto object-contain" />
                 </div>
                 <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-6">
                   <Lock className="w-6 h-6 text-cyan-400" />

@@ -42,9 +42,9 @@ export function AdminShell({
             <span className="block h-0.5 w-5 bg-white rounded" />
           </button>
           {/* Logo */}
-          <div className="flex items-end gap-2">
-            <img src="/atlas-assets/logo-dark.svg" alt="Federalogistic" className="h-45 w-auto object-contain mb-4" />
-            <span className="text-[10px] font-semibold text-white/40 leading-none mb-4">Admin Panel</span>
+          <div className="flex items-center gap-2">
+            <img src="/full-logo.png" alt="Federalogistic" className="h-9 w-auto object-contain" />
+            <span className="text-[10px] font-semibold text-white/40 leading-none">Admin Panel</span>
           </div>
         </div>
 

@@ -75,7 +75,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-300 gap-10 px-5 py-14 lg:grid-cols-[1.55fr_0.8fr_1fr]">
         <div>
           <a href="/" className="inline-block select-none">
-            <img src="/atlas-assets/logo-dark.svg" alt="Federalogistic" className="h-33 w-auto object-contain rounded-2xl" />
+            <img src="/full-logo.png" alt="Federalogistic" className="h-14 w-auto object-contain" />
           </a>
           <p className="mt-4 max-w-190 text-[0.9rem] leading-relaxed text-white/90">
             Providing Smart Logistics Solutions Across The World. We deliver excellence in shipping,
