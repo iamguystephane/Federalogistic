@@ -3,10 +3,11 @@ import { AlertCircle, CheckCircle, Clock, Copy, Save, Upload, X } from "lucide-r
 import { apiForm, apiJson } from "../../lib/api"
 import type { TrackingResult } from "../../data/trackingResult"
 import { emptyForm, DRAFT_KEY, SHIPMENT_REQUIRED, statusOptions, paymentOptions, currencyOptions } from "../constants"
-import { geocodeAddress, sleep } from "../geocode"
+import { validCoordinates } from "../../lib/coordinates"
 import { buildFormData } from "../shipmentUtils"
 import type { ShipmentForm } from "../types"
 import { Field, TextArea, SelectField, FormSection } from "./FormFields"
+import { LocationField } from "./LocationField"
 
 // ── Progress updater ─────────────────────────────────────────────────────────
 
@@ -113,6 +114,11 @@ export function ShipmentFormView({
     setFieldErrors((e) => { const n = { ...e }; delete n[k]; return n })
   }
 
+  const setLocation = (prefix: "origin" | "destination" | "current") => (value: string, lat: string, lng: string) => {
+    setForm((f) => ({ ...f, [`${prefix}Location`]: value, [`${prefix}Lat`]: lat, [`${prefix}Lng`]: lng }))
+    setFieldErrors((e) => { const next = { ...e }; delete next[`${prefix}Location`]; return next })
+  }
+
   useEffect(() => {
     if (!isCreate) return
     try {
@@ -149,57 +155,19 @@ export function ShipmentFormView({
     SHIPMENT_REQUIRED.forEach((k) => {
       if (!String(form[k]).trim()) errors[k] = "This field is required"
     })
+    for (const prefix of ["origin", "destination", "current"] as const) {
+      if ((prefix !== "current" || form.currentLocation.trim()) && !validCoordinates(form[`${prefix}Lat`], form[`${prefix}Lng`])) {
+        errors[`${prefix}Location`] = "Find this location and choose the correct place before saving."
+      }
+    }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); scrollTop(); return }
 
     setSaving(true); setFieldErrors({}); setError("")
     try {
-      // Only re-geocode a field when its text actually changed since the last save —
-      // otherwise every edit (e.g. toggling a hold) would re-query Nominatim and risk
-      // silently swapping in a different, wrong pin for an address that didn't change.
-      const originChanged = form.originLocation.trim() !== initial.originLocation.trim()
-      const destChanged = form.destinationLocation.trim() !== initial.destinationLocation.trim()
-      const currentChanged = form.currentLocation.trim() !== initial.currentLocation.trim()
-
-      let origin = { lat: Number(form.originLat) || 0, lng: Number(form.originLng) || 0 }
-      let dest = { lat: Number(form.destinationLat) || 0, lng: Number(form.destinationLng) || 0 }
-      let waypointGeo: { lat: number; lng: number } | null =
-        form.currentLat && form.currentLng ? { lat: Number(form.currentLat), lng: Number(form.currentLng) } : null
-
-      let queried = false
-      if (originChanged) {
-        setSavingMsg("Finding origin on map…")
-        try {
-          origin = await geocodeAddress(form.originLocation)
-        } catch {
-          setFieldErrors({ originLocation: "Location not found — try a simpler format like \"City, Country\"" })
-          scrollTop(); return
-        }
-        queried = true
-      }
-      if (destChanged) {
-        if (queried) await sleep(1100)
-        setSavingMsg("Finding destination on map…")
-        try {
-          dest = await geocodeAddress(form.destinationLocation)
-        } catch {
-          setFieldErrors({ destinationLocation: "Location not found — try a simpler format like \"City, Country\"" })
-          scrollTop(); return
-        }
-        queried = true
-      }
-      if (!form.currentLocation.trim()) {
-        waypointGeo = null
-      } else if (currentChanged) {
-        if (queried) await sleep(1100)
-        setSavingMsg("Finding current location on map…")
-        try { waypointGeo = await geocodeAddress(form.currentLocation) } catch { /* keep previous */ }
-      }
       const geocodedForm: ShipmentForm = {
         ...form,
-        originLat: String(origin.lat), originLng: String(origin.lng),
-        destinationLat: String(dest.lat), destinationLng: String(dest.lng),
-        currentLat: waypointGeo ? String(waypointGeo.lat) : "",
-        currentLng: waypointGeo ? String(waypointGeo.lng) : "",
+        currentLat: form.currentLocation.trim() ? form.currentLat : "",
+        currentLng: form.currentLocation.trim() ? form.currentLng : "",
       }
       setSavingMsg("Saving…")
       const result = await apiForm<TrackingResult>(
@@ -277,7 +245,7 @@ export function ShipmentFormView({
           <Field label="Sender Name" value={form.senderName} onChange={set("senderName")} required error={fieldErrors.senderName} />
           <Field label="Sender Email" type="email" value={form.senderEmail} onChange={set("senderEmail")} required error={fieldErrors.senderEmail} />
           <Field label="Sender Phone" value={form.senderPhone} onChange={set("senderPhone")} required error={fieldErrors.senderPhone} />
-          <Field label="Origin City / Location" value={form.originLocation} onChange={set("originLocation")} required placeholder="e.g. New York, USA" error={fieldErrors.originLocation} />
+          <LocationField label="Origin City / Location" value={form.originLocation} lat={form.originLat} lng={form.originLng} onChange={setLocation("origin")} required error={fieldErrors.originLocation} disabled={saving} />
         </div>
         <div className="mt-4">
           <TextArea label="Sender Address" value={form.senderAddress} onChange={set("senderAddress")} required error={fieldErrors.senderAddress} />
@@ -289,7 +257,7 @@ export function ShipmentFormView({
           <Field label="Receiver Name" value={form.receiverName} onChange={set("receiverName")} required error={fieldErrors.receiverName} />
           <Field label="Receiver Email" type="email" value={form.receiverEmail} onChange={set("receiverEmail")} required error={fieldErrors.receiverEmail} />
           <Field label="Receiver Phone" value={form.receiverPhone} onChange={set("receiverPhone")} required error={fieldErrors.receiverPhone} />
-          <Field label="Destination City / Location" value={form.destinationLocation} onChange={set("destinationLocation")} required placeholder="e.g. Sydney, Australia" error={fieldErrors.destinationLocation} />
+          <LocationField label="Destination City / Location" value={form.destinationLocation} lat={form.destinationLat} lng={form.destinationLng} onChange={setLocation("destination")} required error={fieldErrors.destinationLocation} disabled={saving} />
         </div>
         <div className="mt-4">
           <TextArea label="Receiver Address" value={form.receiverAddress} onChange={set("receiverAddress")} required error={fieldErrors.receiverAddress} />
@@ -299,7 +267,7 @@ export function ShipmentFormView({
       <FormSection title="Package Information">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <SelectField label="Current Status" value={form.currentStatus} options={statusOptions} onChange={set("currentStatus")} required error={fieldErrors.currentStatus} />
-          <Field label="Current / Hold Location (optional)" value={form.currentLocation} onChange={set("currentLocation")} placeholder="e.g. Dubai, UAE" error={fieldErrors.currentLocation} />
+          <LocationField label="Current / Hold Location (optional)" value={form.currentLocation} lat={form.currentLat} lng={form.currentLng} onChange={setLocation("current")} error={fieldErrors.currentLocation} disabled={saving} />
           <Field label="Shipment Type" value={form.shipmentType} onChange={set("shipmentType")} required error={fieldErrors.shipmentType} />
           <Field label="Delivery Mode" value={form.deliveryMode} onChange={set("deliveryMode")} required error={fieldErrors.deliveryMode} />
           <Field label="Package Type" value={form.packageType} onChange={set("packageType")} required error={fieldErrors.packageType} />
@@ -332,7 +300,7 @@ export function ShipmentFormView({
           <div className="mt-4 space-y-3">
             <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
               <p className="text-sm font-bold text-slate-800 mb-1">Update Date & Time</p>
-              <p className="text-xs text-slate-500 mb-2">This timestamp will be applied to the status change and any toggles turned on below.</p>
+              <p className="text-xs text-slate-500 mb-2">This date and time will appear exactly as entered in the shipment history, progress, and Last Updated banner.</p>
               <Field label="" type="datetime-local" value={form.milestoneDate} onChange={set("milestoneDate")} error={fieldErrors.milestoneDate} />
             </div>
             <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">

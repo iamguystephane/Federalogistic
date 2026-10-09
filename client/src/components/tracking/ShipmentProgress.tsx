@@ -10,7 +10,7 @@
   type LucideIcon,
 } from "lucide-react"
 import type { ProgressStage, TrackingResult } from "../../data/trackingResult"
-import { formatDateTime } from "../../lib/utils"
+import { formatShipmentDateTime } from "../../lib/shipmentTime"
 
 type Props = { data: TrackingResult }
 
@@ -48,7 +48,7 @@ function getColors(stage: ProgressStage): ColorInfo {
 
 function fmtDate(raw?: string) {
   if (!raw) return null
-  return formatDateTime(raw) || null
+  return formatShipmentDateTime(raw) || null
 }
 
 export function ShipmentProgress({ data }: Props) {

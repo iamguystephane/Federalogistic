@@ -1,19 +1,9 @@
 import { CalendarDays, ClipboardList, UserCircle2 } from "lucide-react"
 import type { TrackingResult } from "../../data/trackingResult"
 import { getActiveStatus, getActiveBadgeClass, getShortStatus } from "../../data/trackingResult"
+import { formatShipmentLastUpdated } from "../../lib/shipmentTime"
 
 type Props = { data: TrackingResult }
-
-function formatLastUpdated(raw: string) {
-  try {
-    const d = new Date(raw)
-    const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-    const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
-    return `${date} - ${time}`
-  } catch {
-    return raw
-  }
-}
 
 export function TrackingNumberBanner({ data }: Props) {
   const activeStatus = getActiveStatus(data)
@@ -55,7 +45,7 @@ export function TrackingNumberBanner({ data }: Props) {
           <CalendarDays className="h-5 w-5 shrink-0" />
           <span>
             Last Updated:{" "}
-            <span className="font-semibold text-white">{formatLastUpdated(data.lastUpdated)}</span>
+            <span className="font-semibold text-white">{formatShipmentLastUpdated(data.lastUpdated)}</span>
           </span>
         </div>
 

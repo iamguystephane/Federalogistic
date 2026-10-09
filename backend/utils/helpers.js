@@ -20,9 +20,39 @@ function toDate(value) {
   return value ? new Date(value) : null
 }
 
+// datetime-local values are wall-clock times, not timezone-based instants.
+function shipmentEventDate(value) {
+  if (!value) return new Date().toISOString()
+  const raw = String(value)
+  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::(\d{2})(\.\d{1,3})?)?$/.exec(raw)
+  const normalized = match ? `${match[1]}:${match[2] || "00"}${match[3] || ""}` : ""
+  const parsed = new Date(`${normalized}Z`)
+  if (!normalized || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 19) !== normalized.slice(0, 19)) {
+    const error = new Error("Please enter a valid shipment update date and time.")
+    error.status = 400
+    throw error
+  }
+  return normalized
+}
+
 function toDecimal(value) {
   if (value === undefined || value === null || value === "") return null
   return Number(value)
+}
+
+function locationCoordinates(body, prefix) {
+  if (prefix === "current" && !String(body.currentLocation || "").trim()) return { lat: null, lng: null }
+  const latValue = body[`${prefix}Lat`]
+  const lngValue = body[`${prefix}Lng`]
+  const lat = Number(latValue)
+  const lng = Number(lngValue)
+  if (latValue == null || lngValue == null || String(latValue).trim() === "" || String(lngValue).trim() === "" ||
+      !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    const error = new Error(`Please select a valid ${prefix} map location before saving.`)
+    error.status = 400
+    throw error
+  }
+  return { lat, lng }
 }
 
 function assertRequired(body, fields) {
@@ -58,7 +88,7 @@ function makeProgress(currentStatus, dateShipped) {
 function makeHistory(body, currentStatus) {
   return [
     {
-      date: new Date().toISOString(),
+      date: shipmentEventDate(body.milestoneDate),
       status: statusLabels[currentStatus],
       location: body.currentLocation || body.originLocation,
       description: body.comment || `Shipment status updated to ${statusLabels[currentStatus]}.`,
@@ -80,9 +110,12 @@ const requiredShipmentFields = [
 function shipmentPayload(body, imageUrl, trackingNumber, historyOverride = null, progressOverride = null) {
   const currentStatus = enumStatus(body.currentStatus)
   const dateShipped = toDate(body.dateShipped)
-  const milestoneDate = body.milestoneDate ? new Date(body.milestoneDate).toISOString() : null
+  const milestoneDate = body.milestoneDate ? shipmentEventDate(body.milestoneDate) : null
   const progress = progressOverride ?? makeProgress(currentStatus, milestoneDate || dateShipped?.toISOString())
   const history = historyOverride ?? makeHistory(body, currentStatus)
+  const origin = locationCoordinates(body, "origin")
+  const destination = locationCoordinates(body, "destination")
+  const current = locationCoordinates(body, "current")
 
   return {
     ...(trackingNumber ? { trackingNumber } : {}),
@@ -95,14 +128,14 @@ function shipmentPayload(body, imageUrl, trackingNumber, historyOverride = null,
     receiverPhone: body.receiverPhone || null,
     receiverAddress: body.receiverAddress,
     originLocation: body.originLocation,
-    originLat: Number(body.originLat || 0),
-    originLng: Number(body.originLng || 0),
+    originLat: origin.lat,
+    originLng: origin.lng,
     currentLocation: body.currentLocation || null,
-    currentLat: body.currentLat ? Number(body.currentLat) : null,
-    currentLng: body.currentLng ? Number(body.currentLng) : null,
+    currentLat: current.lat,
+    currentLng: current.lng,
     destinationLocation: body.destinationLocation,
-    destinationLat: Number(body.destinationLat || 0),
-    destinationLng: Number(body.destinationLng || 0),
+    destinationLat: destination.lat,
+    destinationLng: destination.lng,
     currentStatus,
     packageType: body.packageType || null,
     shipmentType: body.shipmentType || null,
@@ -131,6 +164,8 @@ module.exports = {
   statusMap,
   statusLabels,
   toDate,
+  shipmentEventDate,
+  locationCoordinates,
   toDecimal,
   assertRequired,
   enumStatus,

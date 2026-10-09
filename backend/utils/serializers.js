@@ -32,7 +32,8 @@ function serializeShipment(shipment) {
     isOnHold: shipment.isOnHold || false,
     holdReleased: shipment.holdReleased || false,
     deliveryProgress: shipment.deliveryProgress ?? 0,
-    lastUpdated: shipment.updatedAt.toISOString(),
+    // The latest saved event may be backdated by the admin; do not sort by date.
+    lastUpdated: history[history.length - 1]?.date || shipment.updatedAt.toISOString(),
     verified: true,
     sender: {
       name: shipment.senderName,
@@ -81,7 +82,7 @@ function serializeShipment(shipment) {
     mapRoute: {
       origin: { lat: shipment.originLat, lng: shipment.originLng, label: shipment.originLocation },
       waypoint:
-        shipment.currentLat && shipment.currentLng
+        shipment.currentLat != null && shipment.currentLng != null
           ? { lat: shipment.currentLat, lng: shipment.currentLng, label: shipment.currentLocation || "Current Location" }
           : undefined,
       destination: { lat: shipment.destinationLat, lng: shipment.destinationLng, label: shipment.destinationLocation },

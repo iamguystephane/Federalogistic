@@ -1,7 +1,7 @@
 import { CalendarDays } from "lucide-react"
 import type { TrackingResult } from "../../data/trackingResult"
 import { getStatusBadgeClass } from "../../data/trackingResult"
-import { formatDateTime } from "../../lib/utils"
+import { formatShipmentDateTime } from "../../lib/shipmentTime"
 
 type Props = { data: TrackingResult }
 
@@ -47,7 +47,7 @@ export function ShipmentHistory({ data }: Props) {
 
               {/* Content */}
               <div className="pb-6">
-                <p className="text-[0.9rem] text-slate-400">{formatDateTime(event.date)}</p>
+                <p className="text-[0.9rem] text-slate-400">{formatShipmentDateTime(event.date)}</p>
                 <span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-[0.82rem] font-bold ${badge}`}>
                   {event.status}
                 </span>

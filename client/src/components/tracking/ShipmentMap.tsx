@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react"
 import type { TrackingResult } from "../../data/trackingResult"
+import { validCoordinates } from "../../lib/coordinates"
 
 type Props = { data: TrackingResult }
 
@@ -58,12 +59,21 @@ export function ShipmentMap({ data }: Props) {
   const mapInstanceRef = useRef<import("leaflet").Map | null>(null)
   const { origin, waypoint, destination } = data.mapRoute
   const deliveryMode = data.parcel.deliveryMode || data.shipment.type || ""
+  const routeValid = validCoordinates(origin.lat, origin.lng) && validCoordinates(destination.lat, destination.lng) &&
+    (!waypoint || validCoordinates(waypoint.lat, waypoint.lng))
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return
+    const container = mapRef.current
+    if (!container || !routeValid) return
+    let cancelled = false
+    let instance: import("leaflet").Map | null = null
+    let resizeObserver: ResizeObserver | null = null
+    let resizeFrame = 0
 
     import("leaflet").then((L) => {
-      const map = L.map(mapRef.current!, { zoomControl: true, scrollWheelZoom: false })
+      if (cancelled) return
+      const map = L.map(container, { zoomControl: true, scrollWheelZoom: false })
+      instance = map
       mapInstanceRef.current = map
 
       // Override Leaflet's default #ddd background with OSM water color so the areas
@@ -115,17 +125,29 @@ export function ShipmentMap({ data }: Props) {
       ]
       L.polyline(points, { color: "#eab308", weight: 3, opacity: 0.9 }).addTo(map)
 
-      map.invalidateSize()
-      map.fitBounds(L.latLngBounds(points), { padding: [60, 60] })
+      const fitRoute = () => {
+        cancelAnimationFrame(resizeFrame)
+        resizeFrame = requestAnimationFrame(() => {
+          if (cancelled) return
+          map.invalidateSize()
+          map.fitBounds(L.latLngBounds(points), { padding: [60, 60], maxZoom: 13 })
+        })
+      }
+      resizeObserver = new ResizeObserver(fitRoute)
+      resizeObserver.observe(container)
+      fitRoute()
     })
 
     return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
+      cancelled = true
+      cancelAnimationFrame(resizeFrame)
+      resizeObserver?.disconnect()
+      if (instance) {
+        instance.remove()
         mapInstanceRef.current = null
       }
     }
-  }, [data])
+  }, [origin, destination, waypoint, routeValid])
 
   return (
     <div className="flex flex-col rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden" style={{ height: 620 }}>
@@ -147,6 +169,7 @@ export function ShipmentMap({ data }: Props) {
         <div className="absolute inset-0">
           <div ref={mapRef} className="w-full h-full" />
         </div>
+        {!routeValid && <p className="absolute inset-0 flex items-center justify-center bg-slate-50 p-6 text-center text-sm text-slate-600">Route locations need to be corrected by the shipment administrator.</p>}
 
         {/* Delivery mode badge — top-right */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-xl bg-white/95 border border-slate-100 shadow-md px-3 py-2 backdrop-blur-sm">

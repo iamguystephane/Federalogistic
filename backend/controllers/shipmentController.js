@@ -1,7 +1,7 @@
 ﻿const prisma = require("../prisma")
 const { uploadToCloudinary } = require("../config/cloudinary")
 const { sendMail, emailHtml } = require("../config/mail")
-const { assertRequired, requiredShipmentFields, shipmentPayload, statusLabels, enumStatus } = require("../utils/helpers")
+const { assertRequired, requiredShipmentFields, shipmentPayload, statusLabels, enumStatus, shipmentEventDate } = require("../utils/helpers")
 const { serializeShipment, normalizeLabel } = require("../utils/serializers")
 const { uniqueTrackingNumber } = require("../utils/tracking")
 
@@ -96,9 +96,7 @@ async function updateShipment(req, res, next) {
     const wasOnHold = existing.isOnHold || false
 
     const existingHistory = Array.isArray(existing.history) ? existing.history : []
-    const entryDate = req.body.milestoneDate
-      ? new Date(req.body.milestoneDate).toISOString()
-      : new Date().toISOString()
+    const entryDate = shipmentEventDate(req.body.milestoneDate)
     const entryLocation = req.body.currentLocation || req.body.originLocation
     const addTransitMilestone = req.body.addTransitMilestone === "true" || req.body.addTransitMilestone === true
     const addOnTheWayMilestone = req.body.addOnTheWayMilestone === "true" || req.body.addOnTheWayMilestone === true
@@ -156,11 +154,13 @@ async function updateShipment(req, res, next) {
         ? existingProgressArr.map((s) => ({ ...s, step: normalizeLabel(s.step) }))
         : standardLabels.map((step) => ({ step }))
 
-    // Advance dates on standard steps that are now reached
+    // Date newly reached steps and apply explicit time edits to the current step.
     baseProgress = baseProgress.map((step) => {
       if (step.type && step.type !== "standard") return step
       const idx = standardLabels.indexOf(step.step)
-      if (idx !== -1 && idx <= currentStatusIdx && !step.date) {
+      const updatesCurrentStep = idx === currentStatusIdx &&
+        (existing.currentStatus !== currentStatus || (req.body.milestoneDate && wasOnHold === isOnHold && !addTransitMilestone && !addOnTheWayMilestone))
+      if (idx !== -1 && idx <= currentStatusIdx && (!step.date || updatesCurrentStep)) {
         return { ...step, date: entryDate }
       }
       return step
